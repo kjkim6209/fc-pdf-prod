@@ -1,0 +1,557 @@
+# PDF 페이지 분할 서비스 - 프로젝트 아키텍처
+
+## 📋 목차
+1. [프로젝트 개요](#프로젝트-개요)
+2. [기술 스택](#기술-스택)
+3. [프로젝트 구조](#프로젝트-구조)
+4. [아키텍처 개요](#아키텍처-개요)
+5. [컴포넌트 구조](#컴포넌트-구조)
+6. [데이터 흐름](#데이터-흐름)
+7. [핵심 기능 모듈](#핵심-기능-모듈)
+8. [상태 관리](#상태-관리)
+9. [에러 처리](#에러-처리)
+10. [성능 최적화](#성능-최적화)
+11. [보안 고려사항](#보안-고려사항)
+12. [접근성](#접근성-a11y)
+13. [브라우저 호환성](#브라우저-호환성)
+14. [배포 및 빌드](#배포-및-빌드)
+15. [기능 요구사항](#기능-요구사항-prd-기반)
+16. [향후 개선 사항](#향후-개선-사항)
+17. [화면 구성](#화면-구성-prd-기반)
+18. [테스트 시나리오](#테스트-시나리오-prd-기반)
+19. [참고사항](#참고사항-prd-기반)
+
+---
+
+## 프로젝트 개요
+
+### 프로젝트명
+PDF 페이지 분할 서비스 (PDF Page Splitter)
+
+### 목적
+PDF 파일을 업로드하면 각 페이지를 독립적인 PDF 파일로 분할하여 개별 다운로드할 수 있는 웹 서비스
+
+### 핵심 가치 (PRD 기반)
+- **개인정보 보호**: 모든 처리를 클라이언트에서 수행하여 서버에 파일이 저장되지 않음
+- **빠른 처리**: 네트워크 지연 없이 즉시 처리
+- **간편한 사용**: 드래그 앤 드롭으로 직관적인 UX
+
+### 주요 특징
+- 클라이언트 사이드 처리 (서버 비용 없음)
+- 개인정보 보호 (파일이 서버로 전송되지 않음)
+- 오프라인 지원 (초기 로드 후)
+- 반응형 디자인 (모바일/태블릿/데스크톱)
+- 접근성 지원 (키보드 네비게이션, ARIA 레이블)
+- 실시간 진행률 표시
+- 일괄 다운로드 (ZIP 파일)
+- 페이지 선택 다운로드
+
+### 프로젝트 상태
+✅ **완료** - 모든 Phase (0-9) 구현 완료
+
+---
+
+## 기술 스택
+
+### 프론트엔드 프레임워크
+- **Next.js 14.0.4** - React 기반 풀스택 프레임워크
+- **React 18.2.0** - UI 라이브러리
+- **TypeScript 5.3.3** - 타입 안정성
+
+### 스타일링
+- **Tailwind CSS 3.4.0** - 유틸리티 기반 CSS 프레임워크
+- **Shadcn UI** - 컴포넌트 라이브러리
+- **tailwindcss-animate** - 애니메이션 유틸리티
+
+### 핵심 라이브러리
+- **pdf-lib 1.17.1** - PDF 파싱 및 페이지 분할 처리
+- **react-dropzone 14.2.3** - 드래그 앤 드롭 파일 업로드
+- **jszip 3.10.1** - ZIP 파일 생성 (일괄 다운로드)
+
+### 개발 도구
+- **ESLint** - 코드 품질 관리
+- **PostCSS** - CSS 후처리
+- **Autoprefixer** - 브라우저 호환성
+
+---
+
+## 프로젝트 구조
+
+```
+PDF1/
+├── app/                          # Next.js App Router
+│   ├── layout.tsx               # 루트 레이아웃
+│   ├── page.tsx                 # 메인 페이지 (상태 관리)
+│   ├── error.tsx                # 에러 바운더리
+│   ├── global-error.tsx         # 전역 에러 핸들러
+│   └── globals.css              # 전역 스타일
+│
+├── components/                   # React 컴포넌트
+│   ├── upload-area.tsx          # 파일 업로드 영역
+│   ├── result-view.tsx          # 결과 화면 (다운로드)
+│   ├── error-message.tsx        # 에러 메시지 컴포넌트
+│   └── ui/                      # Shadcn UI 컴포넌트
+│       ├── button.tsx
+│       ├── card.tsx
+│       └── loading.tsx          # 로딩 인디케이터
+│
+├── lib/                          # 유틸리티 및 비즈니스 로직
+│   ├── pdf-processor.ts         # PDF 분할 핵심 로직
+│   ├── download.ts              # 개별 다운로드 유틸리티
+│   ├── zip-download.ts          # ZIP 다운로드 유틸리티
+│   ├── file-validation.ts       # 파일 검증 로직
+│   └── utils.ts                 # 공통 유틸리티
+│
+├── types/                        # TypeScript 타입 정의
+│   └── index.ts                 # 전역 타입 정의
+│
+├── PRD/                          # 프로젝트 문서
+│   ├── init.md                  # 초기 PRD
+│   └── init-execution-plan.md   # 실행 계획
+│
+├── public/                       # 정적 파일
+├── package.json                  # 의존성 관리
+├── tsconfig.json                 # TypeScript 설정
+├── tailwind.config.ts            # Tailwind 설정
+└── next.config.js               # Next.js 설정
+```
+
+---
+
+## 아키텍처 개요
+
+### 아키텍처 패턴
+- **컴포넌트 기반 아키텍처** - 재사용 가능한 컴포넌트 구조
+- **계층형 아키텍처** - UI, 비즈니스 로직, 유틸리티 분리
+- **단방향 데이터 흐름** - React의 상태 관리 패턴
+
+### 주요 설계 원칙
+1. **관심사 분리** - UI, 비즈니스 로직, 유틸리티 분리
+2. **재사용성** - 공통 컴포넌트 및 유틸리티 함수
+3. **타입 안정성** - TypeScript를 통한 타입 체크
+4. **에러 처리** - 명확한 에러 메시지 및 복구 옵션
+5. **접근성** - 키보드 네비게이션 및 ARIA 레이블
+
+---
+
+## 컴포넌트 구조
+
+### 페이지 컴포넌트
+
+#### `app/page.tsx` - 메인 페이지
+- **역할**: 애플리케이션 상태 관리 및 화면 전환
+- **상태**:
+  - `appState`: 'upload' | 'processing' | 'result' | 'error'
+  - `pdfData`: 분할된 PDF 데이터
+- **기능**:
+  - 업로드 화면과 결과 화면 간 전환
+  - 상태 기반 조건부 렌더링
+
+#### `components/upload-area.tsx` - 업로드 영역
+- **역할**: PDF 파일 업로드 및 처리
+- **상태**:
+  - `fileInfo`: 업로드된 파일 정보
+  - `error`: 에러 상태
+  - `isProcessing`: 처리 중 상태
+  - `progress`: 처리 진행률 (0-100)
+- **기능**:
+  - 드래그 앤 드롭 파일 업로드
+  - 파일 선택 버튼
+  - 파일 검증
+  - PDF 처리 및 진행률 표시
+  - 에러 처리
+
+#### `components/result-view.tsx` - 결과 화면
+- **역할**: 분할된 PDF 목록 표시 및 다운로드
+- **상태**:
+  - `selectedPages`: 선택된 페이지 인덱스 Set
+  - `isDownloadingZip`: ZIP 다운로드 중 상태
+- **기능**:
+  - 페이지 목록 표시 (그리드 레이아웃)
+  - 개별 페이지 다운로드
+  - 페이지 선택 (체크박스)
+  - 전체 선택/해제
+  - 선택된 페이지 ZIP 다운로드
+  - 전체 페이지 ZIP 다운로드
+
+### UI 컴포넌트
+
+#### `components/ui/loading.tsx` - 로딩 인디케이터
+- **역할**: 처리 중 상태 표시
+- **Props**:
+  - `progress?`: 진행률 (0-100, 선택사항)
+- **기능**:
+  - 스피너 애니메이션
+  - 프로그레스 바 (진행률 제공 시)
+
+#### `components/error-message.tsx` - 에러 메시지
+- **역할**: 사용자 친화적인 에러 표시
+- **Props**:
+  - `error`: UploadError 객체
+  - `onRetry?`: 재시도 콜백 (선택사항)
+- **기능**:
+  - 에러 타입별 상세 메시지
+  - 재시도 버튼
+
+---
+
+## 데이터 흐름
+
+### 파일 업로드 플로우
+
+```
+1. 사용자 파일 업로드
+   ↓
+2. upload-area.tsx: 파일 검증 (file-validation.ts)
+   ↓
+3. upload-area.tsx: PDF 처리 시작 (pdf-processor.ts)
+   ↓
+4. pdf-processor.ts: PDF 로드 및 페이지 분할
+   ↓ (진행률 콜백)
+5. upload-area.tsx: 진행률 업데이트
+   ↓
+6. pdf-processor.ts: 분할 완료 → 결과 반환
+   ↓
+7. upload-area.tsx: onPdfProcessed 콜백 호출
+   ↓
+8. page.tsx: 상태 업데이트 (appState → 'result')
+   ↓
+9. result-view.tsx: 결과 화면 렌더링
+```
+
+### 다운로드 플로우
+
+#### 개별 다운로드
+```
+1. 사용자 "다운로드" 버튼 클릭
+   ↓
+2. result-view.tsx: handleDownload 호출
+   ↓
+3. download.ts: downloadPdf 함수
+   ↓
+4. Blob 생성 → URL 생성 → 다운로드 트리거
+```
+
+#### ZIP 다운로드
+```
+1. 사용자 "전체 다운로드" 또는 "선택한 N개 다운로드" 클릭
+   ↓
+2. result-view.tsx: downloadAsZip 호출
+   ↓
+3. zip-download.ts: JSZip으로 ZIP 생성
+   ↓
+4. 모든 선택된 PDF를 ZIP에 추가
+   ↓
+5. ZIP Blob 생성 → 다운로드 트리거
+```
+
+---
+
+## 핵심 기능 모듈
+
+### 1. PDF 처리 모듈 (`lib/pdf-processor.ts`)
+
+#### 함수
+- `splitPdfIntoPages(file: File, onProgress?: (progress: number) => void): Promise<SplitPdfResult>`
+  - PDF 파일을 개별 페이지로 분할
+  - 진행률 콜백 지원
+
+#### 반환 타입
+```typescript
+interface SplitPdfResult {
+  success: boolean
+  totalPages: number
+  splitPdfs: Uint8Array[]
+  error?: string
+}
+```
+
+### 2. 파일 검증 모듈 (`lib/file-validation.ts`)
+
+#### 함수
+- `validateFile(file: File): { valid: boolean; error?: UploadError }`
+  - 파일 타입 검증 (PDF만 허용)
+  - 파일 크기 검증 (100MB 이하)
+- `formatFileSize(bytes: number): string`
+  - 파일 크기를 읽기 쉬운 형식으로 변환
+
+### 3. 다운로드 모듈 (`lib/download.ts`)
+
+#### 함수
+- `downloadPdf(pdfBytes: Uint8Array, fileName: string): void`
+  - 개별 PDF 파일 다운로드
+  - Blob URL 생성 및 정리
+- `getDownloadFileName(originalFileName: string, pageNumber: number): string`
+  - 다운로드 파일명 생성 (형식: `원본파일명-page-{번호}.pdf`)
+- `sanitizeFileName(fileName: string): string`
+  - 파일명 특수문자 정리 (파일 시스템 호환성)
+
+### 4. ZIP 다운로드 모듈 (`lib/zip-download.ts`)
+
+#### 함수
+- `downloadAsZip(options: ZipDownloadOptions): Promise<void>`
+  - 선택된 페이지들을 ZIP 파일로 다운로드
+  - 전체 또는 선택된 페이지만 지원
+
+#### 옵션 타입
+```typescript
+interface ZipDownloadOptions {
+  splitPdfs: Uint8Array[]
+  originalFileName: string
+  selectedPages?: number[] // 없으면 전체
+}
+```
+
+---
+
+## 상태 관리
+
+### 전역 상태 (page.tsx)
+```typescript
+type AppState = 'upload' | 'processing' | 'result' | 'error'
+
+interface PdfSplitData {
+  originalFileName: string
+  totalPages: number
+  splitPdfs: Uint8Array[]
+}
+```
+
+### 컴포넌트별 상태
+
+#### upload-area.tsx
+- `fileInfo`: FileInfo | null
+- `error`: UploadError | null
+- `isDragActive`: boolean
+- `isProcessing`: boolean
+- `progress`: number (0-100)
+
+#### result-view.tsx
+- `selectedPages`: Set<number>
+- `isDownloadingZip`: boolean
+
+---
+
+## 에러 처리
+
+### 에러 타입
+```typescript
+type UploadErrorType = 
+  | 'INVALID_TYPE'      // 비PDF 파일
+  | 'FILE_TOO_LARGE'    // 100MB 초과
+  | 'READ_ERROR'        // PDF 읽기 실패
+  | 'UNKNOWN'           // 예상치 못한 오류
+```
+
+### 예외 처리 시나리오 (PRD 기반)
+
+#### 8.1 파일 관련 예외
+- ✅ 비PDF 파일 업로드 시 에러 메시지 표시
+- ✅ 손상된 PDF 파일 처리 (READ_ERROR)
+- ✅ 빈 PDF 파일 처리 (페이지 수 0)
+
+#### 8.2 메모리 관련 예외
+- ✅ 대용량 파일 처리 실패 시 안내 메시지
+- ✅ 브라우저 메모리 부족 시 권장사항 안내
+- ✅ 파일 크기 제한 검증 (100MB)
+
+### 에러 처리 전략
+1. **검증 단계**: 파일 업로드 전 검증 (타입, 크기)
+2. **처리 단계**: try-catch로 예외 처리
+3. **사용자 피드백**: 명확한 에러 메시지 및 재시도 옵션
+4. **로깅**: 콘솔 에러 로깅 (개발 환경)
+
+### 에러 바운더리
+- `app/error.tsx`: 일반 에러 처리
+- `app/global-error.tsx`: 전역 에러 처리
+
+---
+
+## 성능 최적화
+
+### 성능 요구사항 (PRD 기반)
+- **50페이지 이하 PDF**: 5초 이내 처리
+- **100페이지 이하 PDF**: 10초 이내 처리
+- 실시간 진행률 표시로 사용자 피드백 제공
+
+### 메모리 관리
+- **Blob URL 정리**: 다운로드 후 URL.revokeObjectURL 호출
+- **비동기 처리**: PDF 분할을 비동기로 처리하여 UI 블로킹 방지
+- **진행률 표시**: 대용량 파일 처리 시 사용자 피드백 제공
+- **메모리 효율성**: 필요한 데이터만 메모리에 유지
+
+### 코드 최적화
+- **useCallback**: 함수 재생성 방지
+- **조건부 렌더링**: 불필요한 렌더링 방지
+- **타입 안정성**: TypeScript로 런타임 에러 방지
+- **비동기 처리**: Promise 기반 비동기 작업
+
+### 사용자 경험
+- **로딩 상태**: 처리 중 명확한 피드백
+- **진행률 표시**: 실시간 진행률 업데이트 (0-100%)
+- **에러 복구**: 재시도 옵션 제공
+- **반응형 디자인**: 다양한 디바이스에서 최적화된 성능
+
+---
+
+## 보안 고려사항
+
+### 클라이언트 사이드 처리 (PRD 기반)
+- 모든 PDF 처리는 브라우저에서 수행
+- 서버 API 호출 없음
+- 파일은 서버에 업로드되지 않음
+- 개인정보 보호에 유리한 구조
+
+### 브라우저 제약사항
+- **메모리 제한**: 대용량 PDF 파일 처리 시 브라우저 메모리 부족 가능
+- **호환성**: 최신 브라우저 지원 (Chrome, Firefox, Safari, Edge)
+- **필수 API**: File API, Blob API, URL.createObjectURL, ArrayBuffer
+
+### 파일 검증
+- 파일 타입 검증 (PDF만 허용)
+- 파일 크기 제한 (100MB 이하 권장)
+- 파일명 특수문자 정리 (Windows 파일 시스템 호환성)
+
+---
+
+## 접근성 (A11y)
+
+### 키보드 네비게이션
+- Tab 키로 모든 요소 탐색 가능
+- Enter/Space 키로 버튼 활성화
+- 포커스 표시 명확
+
+### ARIA 레이블
+- 모든 버튼에 `aria-label` 추가
+- 체크박스에 적절한 레이블
+- 스크린 리더 지원
+
+---
+
+## 브라우저 호환성
+
+### 지원 브라우저
+- Chrome (권장)
+- Firefox
+- Safari
+- Edge
+
+### 필수 기능
+- File API
+- Blob API
+- URL.createObjectURL
+- ArrayBuffer
+
+---
+
+## 배포 및 빌드
+
+### 빌드 명령어
+```bash
+npm run build  # 프로덕션 빌드
+npm run start  # 프로덕션 서버 실행
+npm run dev    # 개발 서버 실행 (포트 3001)
+```
+
+### 환경 요구사항
+- Node.js 18.0 이상
+- npm 또는 yarn
+
+---
+
+## 기능 요구사항 (PRD 기반)
+
+### 3.1 파일 업로드
+- ✅ 드래그 앤 드롭: PDF 파일을 드래그하여 업로드 영역에 드롭
+- ✅ 파일 선택: 클릭하여 파일 선택 다이얼로그 열기
+- ✅ 파일 검증: PDF 파일만 허용, 다른 형식은 에러 메시지 표시
+- ✅ 파일 크기 제한: 브라우저 메모리 고려 (100MB 이하 권장)
+
+### 3.2 PDF 처리
+- ✅ 페이지 추출: 업로드된 PDF의 모든 페이지를 개별적으로 추출
+- ✅ 페이지 수 표시: 총 페이지 수 표시
+- ✅ 처리 상태: 진행 상황 표시 (실시간 진행률 0-100%)
+
+### 3.3 다운로드
+- ✅ 개별 다운로드: 각 페이지를 클릭하여 개별 다운로드
+- ✅ 일괄 다운로드: 모든 페이지를 ZIP 파일로 한 번에 다운로드
+- ✅ 페이지 선택 다운로드: 선택된 페이지만 ZIP 파일로 다운로드
+- ✅ 파일명 규칙: `원본파일명-page-{페이지번호}.pdf` 형식
+
+### 3.4 UI/UX
+- ✅ 단일 페이지: URL 변경 없이 업로드 화면 → 결과 화면 전환
+- ✅ 반응형 디자인: 모바일/태블릿/데스크톱 지원
+- ✅ 로딩 상태: 처리 중 로딩 인디케이터 및 진행률 표시
+- ✅ 에러 처리: 에러 발생 시 사용자 친화적 메시지 표시
+
+## 향후 개선 사항
+
+### 구현 완료 ✅
+- 일괄 다운로드 (ZIP 파일)
+- 페이지 선택 다운로드
+- 처리 진행률 표시
+
+### 미구현 (선택사항)
+- 페이지 썸네일 미리보기 (pdfjs-dist, react-pdf 필요)
+- 다크 모드 지원
+
+---
+
+## 화면 구성 (PRD 기반)
+
+### 4.1 업로드 화면
+- ✅ 드래그 앤 드롭 영역 (Shadcn Card 컴포넌트)
+- ✅ "파일 선택" 버튼
+- ✅ 안내 문구 ("PDF 파일을 드래그하거나 클릭하여 업로드하세요")
+- ✅ 파일 업로드 완료 시 파일 정보 표시
+- ✅ 로딩 인디케이터 및 진행률 표시
+
+### 4.2 결과 화면
+- ✅ 원본 파일 정보 (파일명, 페이지 수)
+- ✅ 페이지 목록 (페이지 번호 및 파일명 표시)
+- ✅ 각 페이지별 다운로드 버튼
+- ✅ 체크박스로 페이지 선택
+- ✅ 전체 선택/해제 버튼
+- ✅ 선택된 페이지 ZIP 다운로드 버튼
+- ✅ 전체 페이지 ZIP 다운로드 버튼
+- ✅ "새 파일 업로드" 버튼 (업로드 화면으로 복귀)
+
+## 테스트 시나리오 (PRD 기반)
+
+### 9.1 정상 케이스
+- ✅ 1페이지 PDF 업로드 및 다운로드
+- ✅ 10페이지 PDF 업로드 및 다운로드
+- ✅ 50페이지 PDF 업로드 및 다운로드
+- ✅ 100페이지 PDF 업로드 및 다운로드 (성능 확인)
+
+### 9.2 예외 케이스
+- ✅ 비PDF 파일 업로드
+- ✅ 손상된 PDF 파일 업로드
+- ✅ 빈 PDF 파일 업로드
+- ✅ 100MB 이상 파일 업로드
+
+### 9.3 크로스 브라우저 테스트
+- Chrome에서 정상 작동
+- Firefox에서 정상 작동
+- Safari에서 정상 작동
+- Edge에서 정상 작동
+
+## 참고사항 (PRD 기반)
+
+1. **서버 비용 없음**: 모든 처리는 클라이언트에서 수행되므로 서버 비용 없음
+2. **개인정보 보호**: 파일이 서버로 전송되지 않아 개인정보 보호에 유리한 구조
+3. **오프라인 지원**: 초기 로드 후 오프라인 환경에서도 작동 가능
+
+---
+
+## 문서 버전
+- **작성일**: 2024년
+- **최종 업데이트**: Phase 9 완료 후 (init.md 기반 업데이트)
+- **버전**: 1.1.0
+- **기반 문서**: PRD/init.md, PRD/init-execution-plan.md
+
+---
+
+## 참고 문서
+- [PRD 문서](./PRD/init.md) - 프로젝트 요구사항 정의
+- [실행 계획](./PRD/init-execution-plan.md) - Phase별 상세 실행 계획

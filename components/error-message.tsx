@@ -24,10 +24,10 @@ export default function ErrorMessage({ error, onRetry }: ErrorMessageProps) {
   }
 
   return (
-    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+    <div className="p-4 bg-red-950/40 border border-red-700/50 rounded-lg text-red-100">
       <div className="flex items-start">
         <svg
-          className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0"
+          className="w-5 h-5 text-red-400 mt-0.5 mr-3 flex-shrink-0"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -40,12 +40,12 @@ export default function ErrorMessage({ error, onRetry }: ErrorMessageProps) {
           />
         </svg>
         <div className="flex-1">
-          <p className="font-medium text-red-800">오류 발생</p>
-          <p className="text-sm text-red-600 mt-1">{getErrorMessage(error)}</p>
+          <p className="font-medium text-red-200">오류 발생</p>
+          <p className="text-sm text-red-300 mt-1">{getErrorMessage(error)}</p>
           {onRetry && (
             <button
               onClick={onRetry}
-              className="mt-3 text-sm text-red-700 hover:text-red-800 underline"
+              className="mt-3 text-sm text-red-300 hover:text-red-200 underline"
             >
               다시 시도
             </button>

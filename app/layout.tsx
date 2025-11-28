@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'PDF 페이지 분할 서비스',
-  description: 'PDF 파일을 각 페이지로 분할하여 다운로드하세요',
+  description: 'PDF 페이지 분할 서비스',
 }
 
 export default function RootLayout({

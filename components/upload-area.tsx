@@ -66,6 +66,13 @@ export default function UploadArea({
 
     onProcessProgress(0)
     onProcessStart()
+    await new Promise((resolve) => {
+      if (typeof window === 'undefined') {
+        resolve(null)
+        return
+      }
+      window.requestAnimationFrame(() => resolve(null))
+    })
     await processPdf(file)
   }, [onProcessError, onProcessProgress, onProcessStart, processPdf])
 
@@ -84,32 +91,31 @@ export default function UploadArea({
   }, [dropzoneActive])
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+    <>
+      {/* 보이지 않는 드롭존 - 전체 화면을 덮음 (로봇 위에 바로 드롭 가능) */}
       <div
         {...getRootProps()}
-        className={`border-2 border-dashed rounded-3xl p-16 text-center transition-all duration-300 bg-slate-900/70 text-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.35)] cursor-pointer ${
-          isDragActive
-            ? 'border-blue-400 bg-blue-950/40 scale-[1.01]'
-            : error
-            ? 'border-red-500/60 bg-red-950/30'
-            : 'border-slate-700 hover:border-slate-500'
-        }`}
+        className="fixed inset-0 z-20"
+        style={{
+          pointerEvents: 'auto',
+          cursor: isDragActive ? 'copy' : 'default',
+          opacity: 0,
+          background: 'transparent',
+        }}
+        aria-hidden="true"
       >
         <input {...getInputProps()} aria-label="PDF 파일 업로드" />
-        <div className="space-y-4">
-          <p className="text-5xl">📄</p>
-          <div className="space-y-2">
-            <p className="text-2xl font-semibold text-slate-50">
-              {isDragActive ? '여기에 파일을 놓으세요' : 'PDF를 드래그하거나 클릭해서 업로드'}
-            </p>
-            <p className="text-sm text-slate-400">최대 100MB, 한 번에 하나의 파일만 지원합니다.</p>
-          </div>
-        </div>
       </div>
+      
+      {/* 에러 메시지만 표시 */}
       {error && (
-        <p className="mt-6 text-center text-sm text-red-400">{error.message}</p>
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-30 pointer-events-none">
+          <p className="px-6 py-3 rounded-lg bg-red-950/90 backdrop-blur-sm text-red-200 text-sm drop-shadow-lg border border-red-500/50">
+            {error.message}
+          </p>
+        </div>
       )}
-    </div>
+    </>
   )
 }
 

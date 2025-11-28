@@ -4,7 +4,10 @@ import { useState } from 'react'
 import UploadArea from '@/components/upload-area'
 import ResultView from '@/components/result-view'
 import Loading from '@/components/ui/loading'
+import { InteractiveRobotSpline } from '@/components/ui/interactive-3d-robot'
 import { AppState, PdfSplitData, UploadError } from '@/types'
+
+const ROBOT_SCENE_URL = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
 
 export default function Home() {
   const [appState, setAppState] = useState<AppState>('upload')
@@ -37,40 +40,61 @@ export default function Home() {
     setAppState('upload')
   }
 
+  const isResult = appState === 'result'
+
   return (
-    <main className="min-h-dvh w-full bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-6 py-10 text-slate-100">
-      <div className="flex min-h-dvh w-full flex-col justify-center space-y-12">
-        <section className="space-y-4 text-center">
-          <p className="inline-flex items-center justify-center px-4 py-1 rounded-full text-sm font-medium border border-blue-500/40 bg-blue-500/10 text-blue-200">
-            3 STEP PDF SPLITTER
-          </p>
-          <h1 className="text-4xl font-extrabold text-white">
-            PDF를 드래그하면 페이지별 다운로드까지 한 번에
-          </h1>
-          <p className="text-slate-300">
-            파일을 올리고, 진행률을 확인하고, 페이지별 썸네일 그리드에서 바로 다운로드하세요.
-          </p>
-        </section>
-
-        {appState === 'upload' && (
-          <UploadArea
-            onPdfProcessed={handlePdfProcessed}
-            onProcessStart={handleProcessStart}
-            onProcessProgress={setProgress}
-            onProcessError={handleProcessError}
-            error={error}
-          />
-        )}
-
-        {appState === 'processing' && (
-          <div className="flex w-full justify-center">
-            <Loading progress={progress} />
+    <main className={`relative min-h-dvh w-full overflow-hidden ${isResult ? 'bg-slate-950' : ''}`}>
+      {!isResult && (
+        <>
+          {/* 3D 로봇 배경 */}
+          <div className="fixed inset-0 z-0 flex items-center justify-center">
+            <div className="w-[90vw] max-w-[1200px] h-[85vh] max-h-[900px]">
+              <InteractiveRobotSpline
+                scene={ROBOT_SCENE_URL}
+                className="w-full h-full"
+              />
+            </div>
           </div>
-        )}
 
-        {appState === 'result' && pdfData && (
-          <ResultView pdfData={pdfData} onReset={handleReset} />
-        )}
+          {/* 로봇 위에 표시되는 제목 */}
+          <div className="fixed top-6 left-0 right-0 z-[5] flex justify-center pointer-events-none px-4">
+            <div className="flex flex-col items-center gap-3 rounded-3xl border border-white/10 bg-slate-950/70 px-8 py-4 backdrop-blur-md shadow-[0_15px_40px_rgba(0,0,0,0.45)]">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-white drop-shadow-2xl text-center">
+                PDF 페이지 분할 서비스
+              </h1>
+              <h5 className="text-lg md:text-xl lg:text-2xl font-medium text-white/90 drop-shadow-lg text-center">
+                3D 로봇 위에 PDF를 드래그하여 페이지별로 분할하세요
+              </h5>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 컨텐츠 오버레이 */}
+      <div className="relative z-10 min-h-dvh w-full px-6 py-10 text-slate-100">
+        <div className="flex min-h-dvh w-full flex-col justify-center space-y-12">
+          {appState === 'upload' && (
+            <UploadArea
+              onPdfProcessed={handlePdfProcessed}
+              onProcessStart={handleProcessStart}
+              onProcessProgress={setProgress}
+              onProcessError={handleProcessError}
+              error={error}
+            />
+          )}
+
+          {appState === 'processing' && (
+            <div className="flex w-full justify-center">
+              <Loading progress={progress} />
+            </div>
+          )}
+
+          {appState === 'result' && pdfData && (
+            <div className="relative z-30">
+              <ResultView pdfData={pdfData} onReset={handleReset} />
+            </div>
+          )}
+        </div>
       </div>
     </main>
   )

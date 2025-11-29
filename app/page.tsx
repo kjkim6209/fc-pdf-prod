@@ -43,12 +43,12 @@ export default function Home() {
   const isResult = appState === 'result'
 
   return (
-    <main className={`relative min-h-dvh w-full overflow-hidden ${isResult ? 'bg-slate-950' : ''}`}>
+    <main className={`relative min-h-dvh w-full overflow-hidden ${isResult ? 'bg-[#080D17]' : ''}`}>
       {!isResult && (
         <>
           {/* 3D 로봇 배경 */}
           <div className="fixed inset-0 z-0 flex items-center justify-center">
-            <div className="w-[90vw] max-w-[1200px] h-[85vh] max-h-[900px]">
+            <div className="w-[60vw] max-w-[700px] h-[60vh] max-h-[600px]">
               <InteractiveRobotSpline
                 scene={ROBOT_SCENE_URL}
                 className="w-full h-full"
@@ -58,11 +58,11 @@ export default function Home() {
 
           {/* 로봇 위에 표시되는 제목 */}
           <div className="fixed top-6 left-0 right-0 z-[5] flex justify-center pointer-events-none px-4">
-            <div className="flex flex-col items-center gap-3 rounded-3xl border border-white/10 bg-slate-950/70 px-8 py-4 backdrop-blur-md shadow-[0_15px_40px_rgba(0,0,0,0.45)]">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-white drop-shadow-2xl text-center">
+            <div className="flex flex-col items-center gap-3 rounded-3xl border border-white/10 bg-[#080D17]/70 px-8 py-4 backdrop-blur-md shadow-[0_15px_40px_rgba(0,0,0,0.45)]">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white drop-shadow-2xl text-center">
                 PDF 페이지 분할 서비스
               </h1>
-              <h5 className="text-lg md:text-xl lg:text-2xl font-medium text-white/90 drop-shadow-lg text-center">
+              <h5 className="text-base md:text-lg lg:text-xl font-medium text-white/90 drop-shadow-lg text-center">
                 3D 로봇 위에 PDF를 드래그하여 페이지별로 분할하세요
               </h5>
             </div>

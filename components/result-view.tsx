@@ -75,7 +75,7 @@ export default function ResultView({ pdfData, onReset }: ResultViewProps) {
             key={index}
             className="rounded-3xl border border-slate-800 bg-slate-900/70 p-4 text-slate-100 shadow-[0_15px_35px_rgba(0,0,0,0.4)] transition-shadow hover:shadow-[0_20px_45px_rgba(0,0,0,0.55)]"
           >
-            <div className="h-48 rounded-2xl border border-slate-800 bg-slate-950/40 overflow-hidden">
+            <div className="h-48 rounded-2xl border border-slate-800 bg-[#080D17]/40 overflow-hidden">
               {previewUrls[index] ? (
                 <iframe
                   src={`${previewUrls[index]}#toolbar=0&navpanes=0&scrollbar=0`}

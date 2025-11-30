@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { PdfSplitData } from '@/types'
 import { downloadPdf, getDownloadFileName } from '@/lib/download'
 import { downloadAsZip } from '@/lib/zip-download'
-import AdModal from '@/components/ad-modal'
 
 interface ResultViewProps {
   pdfData: PdfSplitData
@@ -14,11 +13,6 @@ interface ResultViewProps {
 
 export default function ResultView({ pdfData, onReset }: ResultViewProps) {
   const [isDownloadingZip, setIsDownloadingZip] = useState(false)
-  const [showAdModal, setShowAdModal] = useState(false)
-  const [pendingDownload, setPendingDownload] = useState<{
-    type: 'single' | 'all'
-    pageIndex?: number
-  } | null>(null)
 
   const previewUrls = useMemo(() => {
     return pdfData.splitPdfs.map((bytes) => {
@@ -34,57 +28,33 @@ export default function ResultView({ pdfData, onReset }: ResultViewProps) {
   }, [previewUrls])
 
   const handleDownload = (pageIndex: number) => {
-    setPendingDownload({ type: 'single', pageIndex })
-    setShowAdModal(true)
-  }
-
-  const handleDownloadAll = () => {
-    setPendingDownload({ type: 'all' })
-    setShowAdModal(true)
-  }
-
-  const proceedWithDownload = async () => {
-    setShowAdModal(false)
-    
-    if (!pendingDownload) return
-
     try {
-      if (pendingDownload.type === 'single' && pendingDownload.pageIndex !== undefined) {
-        const pdfBytes = pdfData.splitPdfs[pendingDownload.pageIndex]
-        const fileName = getDownloadFileName(pdfData.originalFileName, pendingDownload.pageIndex + 1)
-        downloadPdf(pdfBytes, fileName)
-      } else if (pendingDownload.type === 'all') {
-        setIsDownloadingZip(true)
-        await downloadAsZip({
-          splitPdfs: pdfData.splitPdfs,
-          originalFileName: pdfData.originalFileName,
-        })
-      }
+      const pdfBytes = pdfData.splitPdfs[pageIndex]
+      const fileName = getDownloadFileName(pdfData.originalFileName, pageIndex + 1)
+      downloadPdf(pdfBytes, fileName)
     } catch (error) {
       console.error('다운로드 중 오류 발생:', error)
       alert('파일 다운로드 중 오류가 발생했습니다. 다시 시도해주세요.')
+    }
+  }
+
+  const handleDownloadAll = async () => {
+    try {
+      setIsDownloadingZip(true)
+      await downloadAsZip({
+        splitPdfs: pdfData.splitPdfs,
+        originalFileName: pdfData.originalFileName,
+      })
+    } catch (error) {
+      console.error('ZIP 다운로드 중 오류 발생:', error)
+      alert('ZIP 파일 다운로드 중 오류가 발생했습니다. 다시 시도해주세요.')
     } finally {
-      setPendingDownload(null)
       setIsDownloadingZip(false)
     }
   }
 
-  const handleAdSkip = () => {
-    setShowAdModal(false)
-    setPendingDownload(null)
-  }
-
   return (
-    <>
-      <AdModal
-        isOpen={showAdModal}
-        onClose={handleAdSkip}
-        onContinue={proceedWithDownload}
-        publisherId="ca-pub-YOUR_PUBLISHER_ID"
-        adSlotId="YOUR_AD_SLOT_ID"
-      />
-
-      <section className="space-y-10 text-slate-100">
+    <section className="space-y-10 text-slate-100">
       <div className="text-center space-y-3">
         <p className="text-sm text-slate-400 uppercase tracking-[0.2em]">분할 완료</p>
         <h2 className="text-3xl font-bold text-white">{pdfData.originalFileName}</h2>
@@ -136,7 +106,6 @@ export default function ResultView({ pdfData, onReset }: ResultViewProps) {
         ))}
       </div>
     </section>
-    </>
   )
 }
 

@@ -8,8 +8,9 @@ export function downloadPdf(
   }
 
   try {
-    // Blob 생성
-    const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+    // Blob 생성 - Uint8Array를 새로운 Uint8Array로 복사하여 타입 호환성 문제 해결
+    // 새로운 Uint8Array를 생성하면 항상 ArrayBuffer를 가진 안전한 타입이 됩니다
+    const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
     
     // Blob URL 생성
     const url = URL.createObjectURL(blob)

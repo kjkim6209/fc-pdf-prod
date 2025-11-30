@@ -8,6 +8,11 @@ export interface ZipDownloadOptions {
 }
 
 export async function downloadAsZip(options: ZipDownloadOptions): Promise<void> {
+  // 클라이언트 사이드에서만 실행
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    throw new Error('ZIP 다운로드 기능은 브라우저 환경에서만 사용할 수 있습니다.')
+  }
+
   try {
     const { splitPdfs, originalFileName, selectedPages } = options
     

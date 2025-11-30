@@ -15,6 +15,11 @@ export default function ResultView({ pdfData, onReset }: ResultViewProps) {
   const [isDownloadingZip, setIsDownloadingZip] = useState(false)
 
   const previewUrls = useMemo(() => {
+    // 클라이언트 사이드에서만 실행
+    if (typeof window === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) {
+      return []
+    }
+    
     return pdfData.splitPdfs.map((bytes) => {
       const cloned = bytes.slice()
       return URL.createObjectURL(new Blob([cloned.buffer], { type: 'application/pdf' }))
